@@ -4,6 +4,10 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Dashboard personal</title>
+<link rel="preconnect" href="https://images.unsplash.com">
+<link rel="preconnect" href="https://api.open-meteo.com">
+<link rel="dns-prefetch" href="//images.unsplash.com">
+<link rel="dns-prefetch" href="//api.open-meteo.com">
 <style>
 :root {
   --bg: #f4f6fb; --panel: rgba(255,255,255,.72); --panel2: rgba(255,255,255,.65);
@@ -79,7 +83,7 @@ h1 { margin:16px 0 10px; font-size: clamp(30px, 4vw, 54px); line-height:.98; let
 .manual-badge { display:inline-block; margin-top:6px; font-size:11px; color:#d7e1ff; background:rgba(140,171,255,.10); border:1px solid rgba(140,171,255,.20); padding:4px 7px; border-radius:999px; }
 @media (max-width: 1280px) { .quick-grid { grid-template-columns: repeat(4, minmax(0,1fr)); } }
 @media (max-width: 1024px) { .hero, .layout { grid-template-columns:1fr; } .sidebar { position:static; } }
-@media (max-width: 780px) { .quick-grid, .bucket-grid { grid-template-columns:1fr; } .wrap { width:min(100% - 16px, var(--maxw)); } .hero-main, .hero-side, .section-card, .sidebar { padding:16px; } }
+@media (max-width: 780px) { .quick-grid, .bucket-grid { grid-template-columns:1fr; } .weather-grid { grid-template-columns: repeat(5, minmax(0,1fr)); } .wrap { width:min(100% - 16px, var(--maxw)); } .hero-main, .hero-side, .section-card, .sidebar { padding:16px; } }
 
 .top-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
 .action-btn {
@@ -137,6 +141,310 @@ body.compact .section-card { padding:14px; }
 .vs { color:var(--muted); font-size:12px; font-weight:600; }
 .match-info { font-size:12px; color:var(--muted); }
 
+
+body {
+  position: relative;
+  overflow-x: hidden;
+  background: var(--bg) !important;
+}
+body::before {
+  content:"";
+  position: fixed;
+  inset: 0;
+  background-image: var(--dynamic-bg);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: -2;
+  filter: saturate(.82) brightness(1.02);
+}
+body::after {
+  content:"";
+  position: fixed;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(250,252,255,.64), rgba(245,248,255,.50)),
+    radial-gradient(1100px 700px at 12% 0%, rgba(255,255,255,.34), transparent 58%),
+    radial-gradient(900px 500px at 100% 12%, rgba(232,238,250,.26), transparent 52%);
+  z-index: -1;
+}
+.quick-sticky { position: static !important; top: auto !important; }
+.hero, .layout, .bucket-grid { align-items: start; }
+.hero-main, .hero-side, .bucket, .quick-link, .link-card, .weather-main, .weather-card, .match-card, .metric, .chip, .sidebar {
+  backdrop-filter: blur(20px);
+}
+.panel { background: rgba(255,255,255,.34) !important; }
+.quick-link, .bucket, .link-card, .weather-card, .metric, .chip, .hero-side, .match-card {
+  background: rgba(255,255,255,.26) !important;
+}
+.weather-main { background: rgba(255,255,255,.24) !important; }
+.match-card { background: rgba(255,255,255,.24) !important; }
+.quick-link:hover, .link-card:hover { background: rgba(255,255,255,.42) !important; }
+
+.search-results {
+  margin-top: 10px;
+  border-radius: 16px;
+  border: 1px solid rgba(148,163,184,.18);
+  background: rgba(255,255,255,.52);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 16px 40px rgba(20,30,50,.12);
+  overflow: hidden;
+}
+.search-results[hidden] { display:none; }
+.search-result {
+  display:flex;
+  gap:10px;
+  align-items:center;
+  padding:12px 14px;
+  border-bottom:1px solid rgba(148,163,184,.12);
+  cursor:pointer;
+}
+.search-result:last-child { border-bottom:none; }
+.search-result:hover, .search-result.active {
+  background: rgba(255,255,255,.46);
+}
+.search-result .favicon {
+  width:24px;
+  height:24px;
+  border-radius:7px;
+  flex:0 0 24px;
+}
+.search-result-meta { min-width:0; }
+.search-result-meta b {
+  display:block;
+  font-size:14px;
+  line-height:1.3;
+}
+.search-result-meta span {
+  display:block;
+  font-size:12px;
+  color:var(--muted);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.search-hint {
+  padding:10px 14px;
+  font-size:12px;
+  color:var(--muted);
+  background: rgba(255,255,255,.28);
+}
+
+.metric b { font-size:22px; }
+.metric span, .chip, .muted, .search input, .helper-line, .top-actions .action-btn { font-size:13px; }
+.quick-link b, .link-card b { font-size:15px; }
+.quick-link span, .link-card span { font-size:13px; }
+
+.weather-title .muted, .match-widget .muted { font-size:14px; }
+.weather-temp-large { font-size:42px; }
+.weather-condition { font-size:14px; margin-top:5px; }
+.weather-range { font-size:13px; margin-top:7px; }
+.weather-icon-main { font-size:56px; }
+.weather-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 9px; }
+.weather-card {
+  padding:10px 8px;
+  min-height: 98px;
+}
+.weather-card > div:first-child {
+  font-size: 13px;
+  line-height: 1.2;
+}
+.weather-icon {
+  font-size: 34px;
+  line-height: 1;
+  margin: 8px 0 10px;
+}
+.weather-temp {
+  font-size: 13px;
+  font-weight: 700;
+}
+.match-header, .vs, .match-info { font-size:13px; }
+.team-name { font-size:26px; }
+
+@media (max-width: 1200px) {
+  .weather-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+@media (max-width: 1024px) {
+  .quick-sticky { position: static !important; }
+}
+
+
+.hero { grid-template-columns: 1.45fr 1fr; align-items: stretch; }
+.hero-main, .hero-side { min-height: 500px; }
+.hero-main { display:flex; flex-direction:column; }
+.hero-main-bottom { margin-top:auto; padding-top:18px; }
+.metrics { margin-top:0; }
+.chips { margin-top:12px; }
+.metric { min-height: 78px; display:flex; flex-direction:column; justify-content:center; }
+
+.quick-grid { grid-template-columns: repeat(8, minmax(0, 1fr)); gap:10px; }
+.quick-grid { grid-template-columns: repeat(8, minmax(0, 1fr)); gap:12px; }
+.quick-link {
+  min-height: 76px;
+  padding: 14px 12px;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+}
+.quick-row { margin-bottom:0; align-items:center; }
+.quick-link span:not(.quick-host) { display:none; }
+.quick-host { display:none; }
+.quick-link b { font-size:15px; line-height:1.2; font-weight:700; }
+.manual-badge { display:none; }
+
+.app-badge {
+  width:30px; height:30px; border-radius:10px;
+  display:grid; place-items:center;
+  font-size:14px; font-weight:800;
+  flex:0 0 30px;
+  border:1px solid rgba(148,163,184,.18);
+  background:linear-gradient(180deg, rgba(255,255,255,.92), rgba(255,255,255,.68));
+  color:#1a2431;
+  box-shadow: 0 6px 18px rgba(20,30,50,.08);
+}
+.app-badge.handing {
+  background: linear-gradient(180deg, rgba(220,236,255,.96), rgba(196,222,252,.88));
+  color: #1b4c7a;
+}
+.app-badge.handing::before { content:"✚"; font-size:13px; }
+.app-badge.handing span { display:none; }
+
+.match-card { overflow:hidden; }
+.match-teams { gap:14px; flex-wrap:nowrap; align-items:center; }
+.team-item {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:0;
+  flex:1 1 0;
+  justify-content:center;
+}
+.team-shield-wrap {
+  width:38px;
+  height:38px;
+  flex:0 0 38px;
+  position:relative;
+}
+.team-shield,
+.team-shield-fallback {
+  width:38px;
+  height:38px;
+  border-radius:10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(255,255,255,.7);
+  border:1px solid rgba(148,163,184,.18);
+}
+.team-shield {
+  object-fit:contain;
+  padding:4px;
+}
+.team-shield-fallback {
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.02em;
+  color:var(--text);
+  box-shadow: 0 6px 18px rgba(20,30,50,.08);
+}
+.team-name {
+  font-size:20px;
+  color:var(--text);
+  font-weight:700;
+  max-width:none;
+  text-overflow:clip;
+  overflow:visible;
+  white-space:normal;
+  line-height:1.08;
+  word-break:break-word;
+}
+.team-name.no-shield { margin-left:0; }
+.vs { flex:0 0 auto; }
+
+@media (max-width: 1350px) {
+  .quick-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}
+@media (max-width: 1100px) {
+  .hero { grid-template-columns: 1fr; }
+  .hero-main, .hero-side { min-height: auto; }
+  .quick-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width: 780px) {
+  .quick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .match-teams { flex-wrap:wrap; }
+  .team-item { flex:1 1 100%; }
+}
+
+
+:root {
+  --bg-gradient:
+    radial-gradient(1200px 700px at 12% -5%, rgba(214,226,255,.55), transparent 58%),
+    radial-gradient(980px 560px at 92% 8%, rgba(232,238,250,.78), transparent 52%),
+    radial-gradient(900px 640px at 50% 100%, rgba(244,247,255,.92), transparent 60%),
+    linear-gradient(180deg, #f7f9fd 0%, #eff3fb 48%, #edf2f9 100%);
+}
+body {
+  min-height: 100vh;
+  transform: none;
+  background: var(--bg) !important;
+}
+body::before {
+  background-image: var(--bg-gradient);
+  background-size: cover;
+  background-attachment: scroll;
+  filter: none;
+}
+body::after {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.10)),
+    radial-gradient(900px 500px at 50% 0%, rgba(255,255,255,.34), transparent 58%);
+}
+.wrap { padding-bottom: 30px; }
+.hero { grid-template-columns: minmax(0, 1.35fr) minmax(360px, .95fr); gap:18px; align-items:stretch; }
+.hero-main, .hero-side { min-height: 430px; }
+.hero-side {
+  grid-template-rows: auto auto auto;
+  align-content:start;
+}
+.search { min-height: 58px; }
+.top-actions { row-gap: 10px; }
+.metrics {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+}
+.metric {
+  min-height: 82px;
+  overflow: hidden;
+}
+.chips { gap:10px; }
+.chip {
+  white-space: nowrap;
+}
+.link-card .meta b {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.link-card .meta span {
+  display:block;
+  max-width:100%;
+}
+.search-results {
+  max-height: 360px;
+  overflow:auto;
+}
+@media (max-width: 1280px) {
+  .hero { grid-template-columns: 1fr; }
+  .hero-main, .hero-side { min-height: auto; }
+}
+@media (max-width: 900px) {
+  .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .metrics { grid-template-columns: 1fr; }
+  .top-actions { flex-direction: column; }
+}
+
 </style>
 </head>
 <body>
@@ -150,21 +458,24 @@ body.compact .section-card { padding:14px; }
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M21 21L16.65 16.65M18 10.5C18 14.6421 14.6421 18 10.5 18C6.35786 18 3 14.6421 3 10.5C3 6.35786 6.35786 3 10.5 3C14.6421 3 18 6.35786 18 10.5Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
         </svg>
-        <input id="searchInput" type="text" placeholder="Buscar accesos, dominios, carpetas o secciones..." />
+        <input id="searchInput" type="text" placeholder="Buscar accesos, dominios, carpetas o secciones..." autocomplete="off" autocapitalize="off" spellcheck="false" autofocus />
         <div class="kbd">Ctrl / ⌘ + K</div>
       </div>
+      <div class="search-results" id="searchResults" hidden></div>
       <div class="top-actions">
         <button class="action-btn" id="compactToggle">Modo compacto</button>
         <button class="action-btn" id="expandAll">Expandir todo</button>
         <button class="action-btn" id="collapseAll">Plegar áreas</button>
       </div>
       <div class="helper-line">Atajos: <b>Ctrl / ⌘ + K</b> busca · <b>Esc</b> limpia búsqueda</div>
+      <div class="hero-main-bottom">
       <div class="metrics">
         <div class="metric"><b>293</b><span>Bookmarks</span></div>
         <div class="metric"><b>17</b><span>Rápidos visibles</span></div>
         <div class="metric"><b>2</b><span>Agregados manuales</span></div>
       </div>
       <div class="chips"><div class="chip">Trabajo diario · 13</div><div class="chip">Judicial · 121</div><div class="chip">Finanzas · 40</div><div class="chip">Noticias · 26</div><div class="chip">Tecnología · 40</div><div class="chip">Media · 9</div><div class="chip">Personal · 29</div><div class="chip">Archivo · 15</div></div>
+      </div>
     </div>
 
     <aside class="panel hero-side">
@@ -269,15 +580,15 @@ function renderQuick(filterTerm = "") {
       node.href = item.url;
       node.target = "_blank";
       node.rel = "noopener noreferrer";
+      const appIcon = item.label === "Handing"
+        ? `<div class="app-badge handing"><span>H</span></div>`
+        : `<div class="favicon"><img src="${faviconUrl(item.url)}" alt=""></div>`;
+
       node.innerHTML = `
-        <div class="row">
-          <div class="favicon"><img src="${faviconUrl(item.url)}" alt=""></div>
+        <div class="row quick-row">
+          ${appIcon}
           <b>${item.label}</b>
         </div>
-        <span>${item.title || item.label}</span>
-        <span>${hostFromUrl(item.url)}</span>
-        <span>${item.path_label}</span>
-        ${item.manual ? `<div class="manual-badge">link agregado manualmente</div>` : ``}
       `;
       grid.appendChild(node);
     });
@@ -347,6 +658,7 @@ document.getElementById("searchInput").addEventListener("input", (e) => {
   const q = e.target.value;
   renderQuick(q);
   renderSections(q);
+  renderSearchResults(q);
 });
 window.addEventListener("keydown", e => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
@@ -370,12 +682,176 @@ document.getElementById("collapseAll").addEventListener("click", () => {
   document.querySelectorAll(".collapse-btn").forEach(b => b.textContent = "Expandir");
 });
 window.addEventListener("keydown", e => {
+  const panelOpen = !!(document.getElementById("searchResults") && !document.getElementById("searchResults").hidden);
   if (e.key === "Escape") {
     searchInput.value = "";
     renderQuick("");
     renderSections("");
+    renderSearchResults("");
     searchInput.blur();
+    return;
   }
+  if (document.activeElement === searchInput && panelOpen) {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      activeSearchIndex = Math.min(activeSearchIndex + 1, currentSearchMatches.length - 1);
+      syncActiveSearchResult();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      activeSearchIndex = Math.max(activeSearchIndex - 1, 0);
+      syncActiveSearchResult();
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      openSearchSelection(searchInput.value);
+    }
+  } else if (document.activeElement === searchInput && e.key === "Enter") {
+    e.preventDefault();
+    openSearchSelection(searchInput.value);
+  }
+});
+
+
+const SEARCH_INDEX = (() => {
+  const entries = [];
+  DATA.quick_links.forEach((item, i) => {
+    entries.push({
+      label: item.label,
+      title: item.title || item.label,
+      url: item.url,
+      subtitle: `${hostFromUrl(item.url)} · ${item.path_label}`,
+      weight: 1000 - i
+    });
+  });
+  Object.entries(DATA.sections).forEach(([sectionName, buckets]) => {
+    buckets.forEach(bucket => {
+      bucket.items.forEach(item => {
+        entries.push({
+          label: item.title || hostFromUrl(item.url),
+          title: item.title || hostFromUrl(item.url),
+          url: item.url,
+          subtitle: `${sectionName} · ${bucket.bucket} · ${hostFromUrl(item.url)}`,
+          weight: 100
+        });
+      });
+    });
+  });
+  const seen = new Set();
+  return entries.filter(item => {
+    const key = item.url;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+})();
+
+let activeSearchIndex = -1;
+let currentSearchMatches = [];
+
+function scoreMatch(item, query) {
+  const q = query.toLowerCase();
+  const hay = `${item.label} ${item.title} ${item.subtitle} ${item.url}`.toLowerCase();
+  if (!hay.includes(q)) return -1;
+  let score = item.weight;
+  if ((item.label || "").toLowerCase().startsWith(q)) score += 220;
+  if ((item.title || "").toLowerCase().startsWith(q)) score += 160;
+  if (hostFromUrl(item.url).toLowerCase().startsWith(q)) score += 120;
+  const pos = hay.indexOf(q);
+  score += Math.max(0, 70 - pos);
+  return score;
+}
+
+function getSearchMatches(query) {
+  return SEARCH_INDEX
+    .map(item => ({ item, score: scoreMatch(item, query) }))
+    .filter(x => x.score >= 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 8)
+    .map(x => x.item);
+}
+
+function renderSearchResults(query) {
+  const panel = document.getElementById("searchResults");
+  if (!panel) return;
+  const q = query.trim();
+  if (!q) {
+    panel.hidden = true;
+    panel.innerHTML = "";
+    currentSearchMatches = [];
+    activeSearchIndex = -1;
+    return;
+  }
+  currentSearchMatches = getSearchMatches(q);
+  activeSearchIndex = currentSearchMatches.length ? 0 : -1;
+
+  if (!currentSearchMatches.length) {
+    panel.hidden = false;
+    panel.innerHTML = `<div class="search-hint">Enter abre una búsqueda de Google para “${q}”.</div>`;
+    return;
+  }
+
+  panel.hidden = false;
+  panel.innerHTML = currentSearchMatches.map((item, idx) => {
+    const searchIcon = item.label === "Handing"
+      ? '<div class="app-badge handing"><span>H</span></div>'
+      : `<div class="favicon"><img src="${faviconUrl(item.url)}" alt=""></div>`;
+    return `
+    <div class="search-result ${idx === activeSearchIndex ? 'active' : ''}" data-index="${idx}">
+      ${searchIcon}
+      <div class="search-result-meta">
+        <b>${item.label}</b>
+        <span>${item.subtitle}</span>
+      </div>
+    </div>
+  `;
+  }).join("");
+
+  panel.querySelectorAll(".search-result").forEach(el => {
+    el.addEventListener("mouseenter", () => {
+      activeSearchIndex = Number(el.dataset.index);
+      syncActiveSearchResult();
+    });
+    el.addEventListener("click", () => {
+      const index = Number(el.dataset.index);
+      const target = currentSearchMatches[index];
+      if (target) window.location.href = target.url;
+    });
+  });
+}
+
+function syncActiveSearchResult() {
+  const panel = document.getElementById("searchResults");
+  if (!panel) return;
+  panel.querySelectorAll(".search-result").forEach((el, idx) => {
+    el.classList.toggle("active", idx === activeSearchIndex);
+  });
+}
+
+function openSearchSelection(query) {
+  const q = query.trim();
+  if (!q) return;
+  if (currentSearchMatches.length && activeSearchIndex >= 0) {
+    window.location.href = currentSearchMatches[activeSearchIndex].url;
+    return;
+  }
+  window.location.href = `https://www.google.com/search?q=${encodeURIComponent(q)}`;
+}
+
+
+function focusSearchInput() {
+  const input = document.getElementById("searchInput");
+  if (!input) return;
+  requestAnimationFrame(() => {
+    input.focus({ preventScroll: true });
+    input.select();
+  });
+}
+
+window.addEventListener("load", () => {
+  focusSearchInput();
+});
+
+window.addEventListener("pageshow", () => {
+  focusSearchInput();
 });
 
 renderQuick();
@@ -463,7 +939,7 @@ function getWeatherDescription(code) {
 
 loadWeather();
 
-// San Lorenzo match widget - Escudos correctos desde Wikimedia/URLs confiables
+// San Lorenzo match widget - logos con fallback seguro para no romper layout
 const teamShields = {
   "San Lorenzo": "https://upload.wikimedia.org/wikipedia/commons/c/c0/Escudo_CASLA.svg",
   "Boca Juniors": "https://upload.wikimedia.org/wikipedia/commons/c/c5/BocaJuniors.svg",
@@ -490,123 +966,223 @@ const teamShields = {
   "Deportivo Rincón": "https://upload.wikimedia.org/wikipedia/commons/3/3e/Deportivo_Rincon_logo.svg"
 };
 
+function normalizeTeamName(teamName = "") {
+  return teamName
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9 ]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
 function getTeamShield(teamName) {
-  // Buscar con match exacto o parcial
+  const normalized = normalizeTeamName(teamName);
   for (const [key, url] of Object.entries(teamShields)) {
-    if (teamName.toLowerCase().includes(key.toLowerCase()) || key.toLowerCase().includes(teamName.toLowerCase())) {
+    const normalizedKey = normalizeTeamName(key);
+    if (normalized === normalizedKey || normalized.includes(normalizedKey) || normalizedKey.includes(normalized)) {
       return url;
     }
   }
-  // Default a San Lorenzo si no encuentra
-  return "https://crests.football-data.org/80.svg";
+  return "";
 }
 
-function getTeamShortName(teamName) {
-  // Acortar nombres muy largos para que quepan en el widget
-  const shortNames = {
-    "Vélez Sarsfield": "Vélez",
-    "Newell's Old Boys": "Newell's",  
-    "Rosario Central": "Rosario",
-    "Defensa y Justicia": "Defensa",
-    "Atlético Tucumán": "Tucumán",
-    "San Lorenzo": "San Lorenzo",
-    "Boca Juniors": "Boca",
-    "River Plate": "River"
-  };
-  
-  for (const [full, short] of Object.entries(shortNames)) {
-    if (teamName.toLowerCase().includes(full.toLowerCase())) {
-      return short;
-    }
-  }
-  return teamName.substring(0, 10);
+function getTeamInitials(teamName = "") {
+  const clean = teamName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(part => part[0]?.toUpperCase() || "")
+    .join("");
+  return clean || "FC";
 }
 
-async function loadNextMatch() {
-  try {
-    // Intentar múltiples fuentes de datos
-    // 1. Primero intentar con API mejorada
-    const response = await fetch(
-      `https://api.sofascore.com/api/v1/team/4130/upcoming`
-    );
-    
-    if (!response.ok) {
-      throw new Error("API no disponible");
-    }
-    
-    const data = await response.json();
-    const events = data.events || [];
-    const matchCard = document.getElementById("matchCard");
-    
-    if (events.length === 0) {
-      // Si no hay datos, cargar datos conocidos
-      showDefaultMatch();
-      return;
-    }
-    
-    const match = events[0];
-    const date = new Date(match.startTimestamp * 1000);
-    const dayStr = String(date.getDate()).padStart(2, "0");
-    const monthStr = String(date.getMonth() + 1).padStart(2, "0");
-    const timeStr = String(date.getHours()).padStart(2, "0") + ":" + String(date.getMinutes()).padStart(2, "0");
-    
-    const home = match.homeTeam.name;
-    const away = match.awayTeam.name;
-    const homeShortName = getTeamShortName(home);
-    const awayShortName = getTeamShortName(away);
-    const homeShield = getTeamShield(home);
-    const awayShield = getTeamShield(away);
-    const competition = match.tournament?.name || "Liga Profesional";
-    
-    matchCard.innerHTML = `
-      <div class="match-header">${dayStr}/${monthStr} ${timeStr}</div>
-      <div class="match-teams">
-        <div class="team-item">
-          <div class="team-name">${homeShortName}</div>
-        </div>
-        <div class="vs">vs</div>
-        <div class="team-item">
-          <div class="team-name">${awayShortName}</div>
-        </div>
+function renderTeam(teamName) {
+  const shield = getTeamShield(teamName);
+  const initials = getTeamInitials(teamName);
+  return `
+    <div class="team-item">
+      <div class="team-shield-wrap">
+        ${shield
+          ? `<img class="team-shield" src="${shield}" alt="${teamName}" onerror="this.style.display='none'; this.insertAdjacentHTML('afterend', '<div class=&quot;team-shield-fallback&quot;>${initials}</div>')">`
+          : `<div class="team-shield-fallback">${initials}</div>`
+        }
       </div>
-      <div class="match-info">${match.homeTeam.stadium?.name || "Estadio"} · ${competition}</div>
-    `;
-
-  } catch (e) {
-    console.error("Error cargando partido:", e);
-    showDefaultMatch();
-  }
-}
-
-function showDefaultMatch() {
-  // Datos actualizados basados en calendarios oficiales
-  // San Lorenzo (local) vs Deportivo Rincón (visitante) - Copa Argentina - Estadio Nuevo Gasómetro
-  const matchCard = document.getElementById("matchCard");
-  matchCard.innerHTML = `
-    <div class="match-header">20/03 21:15</div>
-    <div class="match-teams">
-      <div class="team-item">
-        <div class="team-name">San Lorenzo</div>
-      </div>
-      <div class="vs">vs</div>
-      <div class="team-item">
-        <div class="team-name">Rincón</div>
-      </div>
+      <div class="team-name">${teamName}</div>
     </div>
-    <div class="match-info">Estadio Nuevo Gasómetro · Copa Argentina</div>
   `;
 }
 
-function setRandomBackground() {
-  const images = [
-    'https://images.unsplash.com/photo-1483058712412-4245e9b90334?auto=format&fit=crop&w=2000&q=80',
-    'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=2000&q=80',
-    'https://images.unsplash.com/photo-1516442719524-a50b9d8a6464?auto=format&fit=crop&w=2000&q=80',
-    'https://images.unsplash.com/photo-1501854140801-50d01698950b?auto=format&fit=crop&w=2000&q=80',
-    'https://images.unsplash.com/photo-1534126511673-b6899657816a?auto=format&fit=crop&w=2000&q=80'
+function renderMatchCard({ day = "--/--", time = "--:--", home = "San Lorenzo", away = "Rival", info = "Próximo partido" }) {
+  const matchCard = document.getElementById("matchCard");
+  if (!matchCard) return;
+  matchCard.innerHTML = `
+    <div class="match-header">${day} ${time}</div>
+    <div class="match-teams">
+      ${renderTeam(home)}
+      <div class="vs">vs</div>
+      ${renderTeam(away)}
+    </div>
+    <div class="match-info">${info}</div>
+  `;
+}
+
+function formatMatchDate(dateLike) {
+  const date = dateLike instanceof Date ? dateLike : new Date(dateLike);
+  if (Number.isNaN(date.getTime())) {
+    return { day: "--/--", time: "--:--" };
+  }
+  return {
+    day: String(date.getDate()).padStart(2, "0") + "/" + String(date.getMonth() + 1).padStart(2, "0"),
+    time: String(date.getHours()).padStart(2, "0") + ":" + String(date.getMinutes()).padStart(2, "0")
+  };
+}
+
+function safeCompetition(parts = []) {
+  return parts.filter(Boolean).join(" · ");
+}
+
+function isUpcomingDate(dateLike, marginHours = 4) {
+  const date = dateLike instanceof Date ? dateLike : new Date(dateLike);
+  if (Number.isNaN(date.getTime())) return false;
+  return date.getTime() >= (Date.now() - marginHours * 60 * 60 * 1000);
+}
+
+function parseSofascoreMatch(data) {
+  const match = (data?.events || []).find(evt => evt?.startTimestamp && isUpcomingDate(new Date(evt.startTimestamp * 1000)));
+  if (!match?.startTimestamp) return null;
+  const when = formatMatchDate(new Date(match.startTimestamp * 1000));
+  return {
+    day: when.day,
+    time: when.time,
+    home: match.homeTeam?.name || "San Lorenzo",
+    away: match.awayTeam?.name || "Rival",
+    info: safeCompetition([
+      match.venue?.stadium?.name || match.homeTeam?.venue?.name,
+      match.tournament?.name || match.season?.name || "Competencia"
+    ]) || "Competencia"
+  };
+}
+
+function parseEspnMatch(data) {
+  const event = (data?.events || []).find(evt => {
+    const comp = evt?.competitions?.[0];
+    return comp?.date && isUpcomingDate(comp.date) && evt?.status?.type?.state !== "post";
+  }) || (data?.events || []).find(evt => evt?.competitions?.[0]?.date && isUpcomingDate(evt.competitions[0].date));
+
+  const comp = event?.competitions?.[0];
+  if (!event || !comp?.date) return null;
+
+  const competitors = comp.competitors || [];
+  const homeTeam = competitors.find(c => c.homeAway === "home")?.team?.displayName || competitors[0]?.team?.displayName || "San Lorenzo";
+  const awayTeam = competitors.find(c => c.homeAway === "away")?.team?.displayName || competitors[1]?.team?.displayName || "Rival";
+  const when = formatMatchDate(comp.date);
+  return {
+    day: when.day,
+    time: when.time,
+    home: homeTeam,
+    away: awayTeam,
+    info: safeCompetition([
+      comp.venue?.fullName,
+      event?.league?.name || comp?.notes?.[0]?.headline || data?.team?.displayName || "Competencia"
+    ]) || "Competencia"
+  };
+}
+
+function parseSportsDbMatch(data) {
+  const event = (data?.events || []).find(evt => evt?.dateEvent && isUpcomingDate(`${evt.dateEvent}T${evt.strTime || '00:00:00'}`));
+  if (!event?.dateEvent) return null;
+  const when = formatMatchDate(`${event.dateEvent}T${event.strTime || '00:00:00'}`);
+  return {
+    day: when.day,
+    time: when.time,
+    home: event.strHomeTeam || "San Lorenzo",
+    away: event.strAwayTeam || "Rival",
+    info: safeCompetition([
+      event.strVenue,
+      event.strLeague || event.strSeason || event.strEventAlternate
+    ]) || "Competencia"
+  };
+}
+
+async function fetchJsonWithTimeout(url, timeout = 6000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+  try {
+    const response = await fetch(url, {
+      signal: controller.signal,
+      cache: "no-store",
+      headers: { "Accept": "application/json" }
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function loadNextMatch() {
+  const sources = [
+    {
+      name: "ESPN",
+      url: "https://site.api.espn.com/apis/site/v2/sports/soccer/arg.1/teams/18/schedule",
+      parser: parseEspnMatch
+    },
+    {
+      name: "Sofascore",
+      url: "https://api.sofascore.com/api/v1/team/4130/upcoming",
+      parser: parseSofascoreMatch
+    },
+    {
+      name: "TheSportsDB",
+      url: "https://www.thesportsdb.com/api/v1/json/123/eventsnext.php?id=135173",
+      parser: parseSportsDbMatch
+    }
   ];
-  const picture = images[Math.floor(Math.random() * images.length)];
-  document.body.style.background = `linear-gradient(to bottom, rgba(255,255,255,.88), rgba(245,248,255,.85)), url(${picture}) center/cover fixed no-repeat`;
+
+  for (const source of sources) {
+    try {
+      const data = await fetchJsonWithTimeout(source.url);
+      const parsed = source.parser(data);
+      if (parsed) {
+        renderMatchCard(parsed);
+        return;
+      }
+    } catch (e) {
+      console.warn(`Fuente de partido no disponible: ${source.name}`, e);
+    }
+  }
+
+  showDefaultMatch();
+}
+
+function showDefaultMatch() {
+  renderMatchCard({
+    day: "--/--",
+    time: "--:--",
+    home: "San Lorenzo",
+    away: "Próximo rival",
+    info: "Fixture no disponible en este momento"
+  });
+}
+
+function setRandomBackground() {
+  const gradients = [
+    `radial-gradient(1200px 700px at 12% -5%, rgba(214,226,255,.55), transparent 58%),
+     radial-gradient(980px 560px at 92% 8%, rgba(232,238,250,.78), transparent 52%),
+     radial-gradient(900px 640px at 50% 100%, rgba(244,247,255,.92), transparent 60%),
+     linear-gradient(180deg, #f7f9fd 0%, #eff3fb 48%, #edf2f9 100%)`,
+    `radial-gradient(1100px 680px at 8% 0%, rgba(226,232,245,.66), transparent 56%),
+     radial-gradient(940px 520px at 100% 12%, rgba(238,243,252,.82), transparent 50%),
+     radial-gradient(920px 680px at 50% 100%, rgba(246,248,252,.88), transparent 62%),
+     linear-gradient(180deg, #f8fafc 0%, #eef2f7 50%, #ebf0f6 100%)`,
+    `radial-gradient(1000px 620px at 18% 0%, rgba(218,228,240,.54), transparent 58%),
+     radial-gradient(900px 520px at 88% 14%, rgba(231,236,245,.76), transparent 52%),
+     radial-gradient(860px 600px at 52% 100%, rgba(247,249,252,.90), transparent 60%),
+     linear-gradient(180deg, #f9fbfd 0%, #f1f4f8 50%, #edf1f6 100%)`
+  ];
+  const gradient = gradients[Math.floor(Math.random() * gradients.length)];
+  document.documentElement.style.setProperty('--bg-gradient', gradient);
 }
 
 setRandomBackground();
