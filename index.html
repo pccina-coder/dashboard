@@ -877,25 +877,22 @@ function openSearchSelection(query) {
 }
 
 
-<script>
 function focusSearchInput() {
   const input = document.getElementById("searchInput");
   if (!input) return;
-
-requestAnimationFrame(() => {
-  setTimeout(() => {
+  requestAnimationFrame(() => {
     input.focus({ preventScroll: true });
     input.select();
-  }, 120);
-});
+  });
 }
 
-// cuando carga la página
-window.addEventListener("load", focusSearchInput);
+window.addEventListener("load", () => {
+  focusSearchInput();
+});
 
-// cuando la página vuelve desde cache (muy común en GitHub Pages)
-window.addEventListener("pageshow", focusSearchInput);
-</script>
+window.addEventListener("pageshow", () => {
+  focusSearchInput();
+});
 
 renderQuick();
 renderSections();
