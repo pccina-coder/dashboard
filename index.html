@@ -894,14 +894,6 @@ window.addEventListener("load", focusSearchInput);
 // cuando la página vuelve desde cache (muy común en GitHub Pages)
 window.addEventListener("pageshow", focusSearchInput);
 </script>
-  
-window.addEventListener("load", () => {
-  focusSearchInput();
-});
-
-window.addEventListener("pageshow", () => {
-  focusSearchInput();
-});
 
 renderQuick();
 renderSections();
