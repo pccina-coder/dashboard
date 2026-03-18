@@ -882,10 +882,12 @@ function focusSearchInput() {
   const input = document.getElementById("searchInput");
   if (!input) return;
 
-  requestAnimationFrame(() => {
+requestAnimationFrame(() => {
+  setTimeout(() => {
     input.focus({ preventScroll: true });
     input.select();
-  });
+  }, 120);
+});
 }
 
 // cuando carga la página
